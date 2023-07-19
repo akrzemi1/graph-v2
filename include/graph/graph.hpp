@@ -21,8 +21,13 @@
 #include <concepts>
 #include <type_traits>
 
-#include "detail/graph_cpo.hpp"
+#define NEW_CPO
 
+#ifdef NEW_CPO
+#include "detail/graph_cpo2.hpp"
+#else
+#include "detail/graph_cpo.hpp"
+#endif
 
 // Naming Conventions
 //

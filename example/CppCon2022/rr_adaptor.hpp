@@ -1,6 +1,9 @@
 #pragma once
 
+#include "graph/graph.hpp"
 #include "graph/container/container_utility.hpp"
+#include <utility>
+#include <ranges>
 
 // references for to_tuple
 // https://www.reddit.com/r/cpp/comments/4yp7fv/c17_structured_bindings_convert_struct_to_a_tuple/
