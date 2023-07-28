@@ -610,6 +610,135 @@ public:
 };
 } // namespace std::graph
 
+
+#  ifdef NEW_CPO
+
+namespace std::graph::views {
+
+// vertices_depth_first_search(g,seed,alloc)    -> vertex_descriptor[uid,u]
+// vertices_depth_first_search(g,seed,fn,alloc) -> vertex_descriptor[uid,u,value]
+namespace _Vertices_depth_first_search {
+#    if defined(__clang__) || defined(__EDG__) // TRANSITION, VSO-1681199
+  void vertices_depth_first_search() = delete; // Block unqualified name lookup
+#    else                                      // ^^^ no workaround / workaround vvv
+  void vertices_depth_first_search();
+#    endif                                     // ^^^ workaround ^^^
+
+  template <class _G, class _A>
+  concept _Has_all = _Has_class_or_enum_type<_G> //
+                     && requires(_G&& __g, vertex_id_t<_G> seed, _A& alloc) {
+                          { _Fake_copy_init(vertices_depth_first_search(__g, seed, alloc)) } -> ranges::forward_range;
+                        };
+
+  template <class _G, class VV, class _A>
+  concept _Has_all_vvf = _Has_class_or_enum_type<_G> //
+                         && requires(_G&& __g, vertex_id_t<_G> seed, VV& vv, _A& alloc) {
+                              {
+                                _Fake_copy_init(vertices_depth_first_search(__g, seed, vv, alloc))
+                              } -> ranges::forward_range;
+                            };
+
+  class _Cpo {
+  private:
+    template <class _G>
+    struct _value_fnc {
+      _value_fnc() = default;
+      // return of int is a placeholder; actual VVF may return a diff type
+      constexpr int operator()(vertex_reference_t<_G>) const noexcept;
+    };
+
+    enum class _St_all_opt { _None, _Non_member };
+    enum class _St_all_vvf_opt { _None, _Non_member };
+
+    template <class _G, class _A>
+    [[nodiscard]] static consteval _Choice_t<_St_all_opt> _Choose_all_opt() noexcept {
+      if constexpr (_Has_all<_G>) {
+        return {_St_all_opt::_Non_member, noexcept(_Fake_copy_init(vertices_depth_first_search(
+                                                declval<_G>(), declval<vertex_id_t<_G>>(), declval<_A>())))};
+      } else {
+        return {_St_all_opt::_None};
+      }
+    }
+    template <class _G, class _A>
+    static constexpr _Choice_t<_St_all_opt> _Choice_all = _Choose_all_opt<_G, _A>();
+
+    template <class _G, class VV, class _A>
+    [[nodiscard]] static consteval _Choice_t<_St_all_vvf_opt> _Choose_all_vvf_opt() noexcept {
+      if constexpr (_Has_all_vvf<_G, VV, _A>) {
+        return {_St_all_vvf_opt::_Non_member,
+                noexcept(_Fake_copy_init(vertices_depth_first_search(std::declval<_G>(), declval<vertex_id_t<_G>>(),
+                                                                     declval<VV>(), declval<_A>())))};
+      } else {
+        return {_St_all_vvf_opt::_None};
+      }
+    }
+    template <class _G, class VVF, class _A>
+    static constexpr _Choice_t<_St_all_vvf_opt> _Choice_all_vvf = _Choose_all_vvf_opt<_G, VVF, _A>();
+
+  public:
+    /**
+     * @brief Get a vertices_depth_first_search of a vertices in a graph.
+     * 
+     * Complexity: O(1)
+     * 
+     * Default implementation: returns vertices_depth_first_search_view<G>(vertices(std::forward<G>(g)))
+     * 
+     * @tparam G The graph type.
+     * @param g A graph instance.
+     * @return A range of all vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>>.
+    */
+    template <class _G, class Stack = stack<dfs_element<_G>>, class Alloc = allocator<bool>>
+    [[nodiscard]] constexpr auto operator()(_G&& __g, vertex_id_t<_G>&& seed, const Alloc& alloc = Alloc()) const
+          noexcept(_Choice_all<_G, Alloc>._No_throw) {
+      if constexpr (_Choice_all<_G, Alloc>()._Strategy == _St_all_opt::_Non_member) {
+        return vertices_depth_first_search(std::forward<_G>(__g), std::forward<decltype(seed)>(seed), alloc);
+      } else {
+        return vertices_depth_first_search_view<_G, Stack>( //
+              std::forward<decltype(__g)>(__g),             //
+              std::forward<decltype(seed)>(seed),           //
+              alloc);
+      }
+    }
+
+    /**
+     * @brief Get a vertices_depth_first_search of all vertices in a graph with projected values.
+     * 
+     * Complexity: O(1)
+     * 
+     * Default implementation: returns vertices_depth_first_search_view<G,VVF,Stack>(vertices(std::forward<G>(g),value_fn))
+     * 
+     * @tparam G The graph type.
+     * @param g A graph instance.
+     * @param value_fn(vertex_reference_t<G>) that returns a vertex value.
+     * @return A range of all vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>, decltype(value_fn())>.
+    */
+    template <class _G, class VVF, class Stack = stack<dfs_element<_G>>, class Alloc = allocator<bool>>
+    requires ranges::random_access_range<vertex_range_t<_G>> && integral<vertex_id_t<_G>> &&
+             invocable<VVF, vertex_t<_G>> && _detail::is_allocator_v<Alloc>
+    [[nodiscard]] constexpr auto
+    operator()(_G&& __g, vertex_id_t<_G>&& seed, VVF&& value_fn, const Alloc& alloc = Alloc()) const
+          noexcept(_Choice_all_vvf<_G, invoke_result_t<VVF(vertex_t<_G>)>, Alloc>._No_throw) {
+      if constexpr (_Choice_all_vvf<_G, invoke_result_t<VVF(vertex_t<_G>)>, Alloc>()._Strategy ==
+                    _St_all_opt::_Non_member) {
+        return vertices_depth_first_search(std::forward<_G>(__g), std::forward<decltype(seed)>(seed),
+                                           std::forward<decltype(value_fn)>(value_fn), alloc);
+      } else {
+        return vertices_depth_first_search_view<_G, VVF, Stack>( //
+              std::forward<decltype(__g)>(__g),                  //
+              std::forward<decltype(seed)>(seed),                //
+              std::forward<decltype(value_fn)>(value_fn),        //
+              alloc);
+      }
+    }
+  };
+} // namespace _Vertices_depth_first_search
+
+inline namespace _Cpos {
+  inline constexpr _Vertices_depth_first_search::_Cpo vertices_depth_first_search;
+}
+
+
+#  else
 namespace std::graph::tag_invoke {
 // vertices_depth_first_search CPO
 TAG_INVOKE_DEF(vertices_depth_first_search); // vertices_depth_first_search(g,seed)    -> vertices[vid,v]
@@ -727,4 +856,6 @@ sourced_edges_depth_first_search(G&& g, vertex_id_t<G> seed, const EVF& evf, con
 
 } // namespace std::graph::views
 
-#endif // GRAPH_DFS_HPP
+#  endif //NEW_CPO
+
+#endif   // GRAPH_DFS_HPP
