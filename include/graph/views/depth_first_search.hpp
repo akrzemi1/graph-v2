@@ -630,23 +630,16 @@ namespace _Vertices_depth_first_search {
                           { _Fake_copy_init(vertices_depth_first_search(__g, seed, alloc)) } -> ranges::forward_range;
                         };
 
-  template <class _G, class VV, class _A>
+  template <class _G, class VVF, class _A>
   concept _Has_all_vvf = _Has_class_or_enum_type<_G> //
-                         && requires(_G&& __g, vertex_id_t<_G> seed, VV& vv, _A& alloc) {
+                         && requires(_G&& __g, vertex_id_t<_G> seed, VVF& vvf, _A& alloc) {
                               {
-                                _Fake_copy_init(vertices_depth_first_search(__g, seed, vv, alloc))
+                                _Fake_copy_init(vertices_depth_first_search(__g, seed, vvf, alloc))
                               } -> ranges::forward_range;
                             };
 
   class _Cpo {
   private:
-    template <class _G>
-    struct _value_fnc {
-      _value_fnc() = default;
-      // return of int is a placeholder; actual VVF may return a diff type
-      constexpr int operator()(vertex_reference_t<_G>) const noexcept;
-    };
-
     enum class _St_all_opt { _None, _Non_member };
     enum class _St_all_vvf_opt { _None, _Non_member };
 
@@ -662,12 +655,12 @@ namespace _Vertices_depth_first_search {
     template <class _G, class _A>
     static constexpr _Choice_t<_St_all_opt> _Choice_all = _Choose_all_opt<_G, _A>();
 
-    template <class _G, class VV, class _A>
+    template <class _G, class VVF, class _A>
     [[nodiscard]] static consteval _Choice_t<_St_all_vvf_opt> _Choose_all_vvf_opt() noexcept {
-      if constexpr (_Has_all_vvf<_G, VV, _A>) {
+      if constexpr (_Has_all_vvf<_G, VVF, _A>) {
         return {_St_all_vvf_opt::_Non_member,
                 noexcept(_Fake_copy_init(vertices_depth_first_search(std::declval<_G>(), declval<vertex_id_t<_G>>(),
-                                                                     declval<VV>(), declval<_A>())))};
+                                                                     declval<VVF>(), declval<_A>())))};
       } else {
         return {_St_all_vvf_opt::_None};
       }
@@ -679,15 +672,21 @@ namespace _Vertices_depth_first_search {
     /**
      * @brief Get a vertices_depth_first_search of a vertices in a graph.
      * 
-     * Complexity: O(1)
+     * Complexity: O(N)
      * 
-     * Default implementation: returns vertices_depth_first_search_view<G>(vertices(std::forward<G>(g)))
+     * Default implementation: vertices_depth_first_search_view<G>(vertices(g))
      * 
-     * @tparam G The graph type.
-     * @param g A graph instance.
+     * @tparam G     The graph type.
+     * @tparam Stack Stack type (used internally)
+     * @tparam Alloc Allocator type
+     * 
+     * @param g        A graph instance.
+     * @param seed     Vertex id to start the search.
+     * @param alloc    Allocator used for internal storage
+     * 
      * @return A range of all vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>>.
     */
-    template <class _G, class Stack = stack<dfs_element<_G>>, class Alloc = allocator<bool>>
+    template <adjacency_list _G, class Stack = stack<dfs_element<_G>>, class Alloc = allocator<bool>>
     [[nodiscard]] constexpr auto operator()(_G&& __g, vertex_id_t<_G>&& seed, const Alloc& alloc = Alloc()) const
           noexcept(_Choice_all<_G, Alloc>._No_throw) {
       if constexpr (_Choice_all<_G, Alloc>()._Strategy == _St_all_opt::_Non_member) {
@@ -703,23 +702,29 @@ namespace _Vertices_depth_first_search {
     /**
      * @brief Get a vertices_depth_first_search of all vertices in a graph with projected values.
      * 
-     * Complexity: O(1)
+     * Complexity: O(N)
      * 
-     * Default implementation: returns vertices_depth_first_search_view<G,VVF,Stack>(vertices(std::forward<G>(g),value_fn))
+     * Default implementation: vertices_depth_first_search_view<G,VVF,Stack>(vertices(g,value_fn))
      * 
-     * @tparam G The graph type.
-     * @param g A graph instance.
-     * @param value_fn(vertex_reference_t<G>) that returns a vertex value.
+     * @tparam G     The graph type.
+     * @tparam VVF   Edge Value Function
+     * @tparam Stack Stack type (used internally)
+     * @tparam Alloc Allocator type
+     * 
+     * @param g        A graph instance.
+     * @param seed     Vertex id to start the search.
+     * @param value_fn Function that takes a vertex reference and returns a vertex value.
+     * @param alloc    Allocator used for internal storage
+     * 
      * @return A range of all vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>, decltype(value_fn())>.
     */
-    template <class _G, class VVF, class Stack = stack<dfs_element<_G>>, class Alloc = allocator<bool>>
+    template <adjacency_list _G, class VVF, class Stack = stack<dfs_element<_G>>, class Alloc = allocator<bool>>
     requires ranges::random_access_range<vertex_range_t<_G>> && integral<vertex_id_t<_G>> &&
              invocable<VVF, vertex_t<_G>> && _detail::is_allocator_v<Alloc>
     [[nodiscard]] constexpr auto
     operator()(_G&& __g, vertex_id_t<_G>&& seed, VVF&& value_fn, const Alloc& alloc = Alloc()) const
-          noexcept(_Choice_all_vvf<_G, invoke_result_t<VVF(vertex_t<_G>)>, Alloc>._No_throw) {
-      if constexpr (_Choice_all_vvf<_G, invoke_result_t<VVF(vertex_t<_G>)>, Alloc>()._Strategy ==
-                    _St_all_opt::_Non_member) {
+          noexcept(_Choice_all_vvf<_G, VVF, Alloc>._No_throw) {
+      if constexpr (_Choice_all_vvf<_G, VVF, Alloc>()._Strategy == _St_all_opt::_Non_member) {
         return vertices_depth_first_search(std::forward<_G>(__g), std::forward<decltype(seed)>(seed),
                                            std::forward<decltype(value_fn)>(value_fn), alloc);
       } else {
@@ -735,6 +740,136 @@ namespace _Vertices_depth_first_search {
 
 inline namespace _Cpos {
   inline constexpr _Vertices_depth_first_search::_Cpo vertices_depth_first_search;
+}
+
+
+//
+// edges_depth_first_search(g,seed,alloc)
+// edges_depth_first_search(g,seed,evf,alloc)
+//
+namespace _Edges_depth_first_search {
+  template <class _G, class _A>
+  concept _Has_all = _Has_class_or_enum_type<_G> //
+                     && requires(_G&& __g, vertex_id_t<_G> seed, _A alloc) {
+                          { _Fake_copy_init(edges_depth_first_search(__g, seed, alloc)) } -> ranges::forward_range;
+                        };
+
+  template <class _G, class EVF, class _A>
+  concept _Has_all_evf = _Has_class_or_enum_type<_G>             //
+                         && invocable<EVF, edge_reference_t<_G>> //
+                         && requires(_G&& __g, vertex_id_t<_G> seed, EVF evf, _A alloc) {
+                              {
+                                _Fake_copy_init(edges_depth_first_search(__g, seed, evf, alloc))
+                              } -> ranges::forward_range;
+                            };
+
+  class _Cpo {
+  private:
+    enum class _St_all_opt { _None, _Non_member };
+    enum class _St_all_evf_opt { _None, _Non_member };
+
+    template <class _G, class _A>
+    [[nodiscard]] static consteval _Choice_t<_St_all_opt> _Choose_all_opt() noexcept {
+      if constexpr (_Has_all<_G>) {
+        return {_St_all_opt::_Non_member, noexcept(_Fake_copy_init(edges_depth_first_search(
+                                                declval<_G>(), declval<vertex_id_t<_G>>(), declval<_A>())))};
+      } else {
+        return {_St_all_opt::_None};
+      }
+    }
+    template <class _G, class _A>
+    static constexpr _Choice_t<_St_all_opt> _Choice_all = _Choose_all_opt<_G, _A>();
+
+    template <class _G, class EVF, class _A>
+    [[nodiscard]] static consteval _Choice_t<_St_all_evf_opt> _Choose_all_evf_opt() noexcept {
+      if constexpr (_Has_all_evf<_G>) {
+        return {_St_all_evf_opt::_Non_member,
+                noexcept(_Fake_copy_init(edges_depth_first_search(std::declval<_G>(), declval<vertex_id_t<_G>>(),
+                                                                  std::declval<EVF>(), std::declval<_A>())))};
+      } else {
+        return {_St_all_evf_opt::_None};
+      }
+    }
+    template <class _G, class EVF, class _A>
+    static constexpr _Choice_t<_St_all_evf_opt> _Choice_all_evf = _Choose_all_evf_opt<_G, EVF, _A>();
+
+  public:
+    /**
+     * @brief Get recursive edges of a vertex in a graph in depth_first_search order.
+     * 
+     * Complexity: O(N)
+     * 
+     * Default implementation: edges_depth_first_search_view<_G, void, false, Stack>(__g, seed, alloc);
+     * 
+     * @tparam G     The graph type.
+     * @tparam Stack Stack type
+     * @tparam Alloc Allocator type
+     * 
+     * @param g     A graph instance.
+     * @param seed  Vertex id to get the outgoing edges for.
+     * @param alloc Allocator used for internal storage
+     * 
+     * @return The range of outgoing edges on a vertex with value_type of edge_descriptor<vertex_id_t<G>, false, edge_reference_t<G>>.
+    */
+    template <adjacency_list _G, class Stack = stack<dfs_element<_G>>, class Alloc = allocator<bool>>
+    requires ranges::random_access_range<vertex_range_t<_G>> && integral<vertex_id_t<_G>> &&
+             _detail::is_allocator_v<Alloc>
+    [[nodiscard]] constexpr auto operator()(_G&& __g, vertex_id_t<_G>&& seed, const Alloc& alloc = Alloc()) const
+          noexcept(_Choice_all<_G>._No_throw) {
+      if constexpr (_Choice_all<_G>()._Strategy == _St_all_opt::_Non_member) {
+        return edges_depth_first_search(forward<decltype(__g)>(__g),   //
+                                        forward<decltype(seed)>(seed), //
+                                        alloc);
+      } else {
+        return edges_depth_first_search_view<_G, void, false, Stack>(forward<decltype(__g)>(__g),   //
+                                                                     forward<decltype(seed)>(seed), //
+                                                                     alloc);
+      }
+    }
+
+    /**
+     * @brief Get recursive edges of a vertex in a graph with projected values, in depth-first order.
+     * 
+     * Complexity: O(N)
+     * 
+     * Default implementation: edges_depth_first_search_view<_G, EVF, false, Stack>(g, seed, value_fn, alloc);
+     * 
+     * @tparam G     The graph type.
+     * @tparam EVF   Edge Value Function
+     * @tparam Stack Stack type
+     * @tparam Alloc Allocator type
+     * 
+     * @param g        A graph instance.
+     * @param seed     Vertex id to get the outgoing edges for.
+     * @param value_fn Function that takes an edge reference and returns an edge value.
+     * @param alloc    Allocator used for internal storage
+     * 
+     * @return The range of all outgoing edges of a vertex with value_type of edge_descriptor<vertex_id_t<G>, false, edge_reference<G>, decltype(value_fn())>.
+    */
+    template <adjacency_list _G, class EVF, class Stack = stack<dfs_element<_G>>, class Alloc = allocator<bool>>
+    requires ranges::random_access_range<vertex_range_t<_G>> && integral<vertex_id_t<_G>> &&
+             invocable<EVF, edge_reference_t<_G>> && _detail::is_allocator_v<Alloc>
+    [[nodiscard]] constexpr auto
+    operator()(_G&& __g, vertex_id_t<_G>&& seed, EVF&& value_fn, const Alloc& alloc = Alloc()) const
+          noexcept(_Choice_all_evf<_G, EVF, Alloc>._No_throw) {
+      if constexpr (_Choice_all_evf<_G, EVF, Alloc>()._Strategy == _St_all_opt::_Non_member) {
+        return edges_depth_first_search(forward<decltype(__g)>(__g),           //
+                                        forward<decltype(seed)>(seed),         //
+                                        forward<decltype(value_fn)>(value_fn), //
+                                        alloc);
+      } else {
+        return edges_depth_first_search_view<_G, EVF, false, Stack>(forward<decltype(__g)>(__g),           //
+                                                                    forward<decltype(seed)>(seed),         //
+                                                                    forward<decltype(value_fn)>(value_fn), //
+                                                                    alloc);
+      }
+    }
+  };
+
+} // namespace _Edges_depth_first_search
+
+inline namespace _Cpos {
+  inline constexpr _Edges_depth_first_search::_Cpo edges_depth_first_search;
 }
 
 
