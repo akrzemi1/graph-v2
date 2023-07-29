@@ -222,55 +222,48 @@ using incidence_view = ranges::subrange<incidence_iterator<G, Sourced, EVF>, ver
 namespace std::graph::views {
 
 namespace _Incidence {
-  template <class _G>
-  concept _Has_all = _Has_class_or_enum_type<_G> //
-                     && requires(_G&& __g, vertex_id_t<_G> uid) {
-                          { _Fake_copy_init(incidence(__g, uid)) } -> ranges::forward_range;
+  template <class G>
+  concept _Has_all = _Has_class_or_enum_type<G> //
+                     && requires(G&& g, vertex_id_t<G> uid) {
+                          { _Fake_copy_init(incidence(g, uid)) } -> ranges::forward_range;
                         };
 
-  template <class _G, class EVF>
-  concept _Has_all_vvf = _Has_class_or_enum_type<_G>             //
-                         && invocable<EVF, edge_reference_t<_G>> //
-                         && requires(_G&& __g, vertex_id_t<_G>& uid, const EVF& evf) {
-                              { _Fake_copy_init(incidence(__g, uid, evf)) } -> ranges::forward_range;
+  template <class G, class EVF>
+  concept _Has_all_vvf = _Has_class_or_enum_type<G>             //
+                         && invocable<EVF, edge_reference_t<G>> //
+                         && requires(G&& g, vertex_id_t<G>& uid, EVF&& evf) {
+                              { _Fake_copy_init(incidence(g, uid, evf)) } -> ranges::forward_range;
                             };
 
   class _Cpo {
   private:
-    template <class _G>
-    struct _value_fnc {
-      _value_fnc() = default;
-      // return of int is a placeholder; actual EVF may return a diff type
-      constexpr int operator()(edge_reference_t<_G>) const noexcept;
-    };
-
     enum class _St_all_opt { _None, _Non_member };
     enum class _St_all_evf_opt { _None, _Non_member };
 
-    template <class _G>
+    template <class G>
     [[nodiscard]] static consteval _Choice_t<_St_all_opt> _Choose_all_opt() noexcept {
-      if constexpr (_Has_all<_G>) {
+      if constexpr (_Has_all<G>) {
         return {_St_all_opt::_Non_member,
-                noexcept(_Fake_copy_init(incidence(declval<_G>(), declval<vertex_id_t<_G>>())))};
+                noexcept(_Fake_copy_init(incidence(declval<G>(), declval<vertex_id_t<G>>())))};
       } else {
         return {_St_all_opt::_None};
       }
     }
-    template <class _G>
-    static constexpr _Choice_t<_St_all_opt> _Choice_all = _Choose_all_opt<_G>();
+    template <class G>
+    static constexpr _Choice_t<_St_all_opt> _Choice_all = _Choose_all_opt<G>();
 
-    template <class _G>
+    template <class G, class EVF>
     [[nodiscard]] static consteval _Choice_t<_St_all_evf_opt> _Choose_all_evf_opt() noexcept {
-      if constexpr (_Has_all_vvf<_G>) {
-        return {_St_all_evf_opt::_Non_member,
-                noexcept(_Fake_copy_init(
-                      incidence(std::declval<_G>(), declval<vertex_id_t<_G>>(), std::declval<_value_fnc>())))};
+      if constexpr (_Has_all_vvf<G>) {
+        return {
+              _St_all_evf_opt::_Non_member,
+              noexcept(_Fake_copy_init(incidence(std::declval<G>(), declval<vertex_id_t<G>>(), std::declval<EVF>())))};
       } else {
         return {_St_all_evf_opt::_None};
       }
     }
-    template <class _G>
-    static constexpr _Choice_t<_St_all_evf_opt> _Choice_all_evf = _Choose_all_evf_opt<_G>();
+    template <class G, class EVF>
+    static constexpr _Choice_t<_St_all_evf_opt> _Choice_all_evf = _Choose_all_evf_opt<G, EVF>();
 
   public:
     /**
@@ -278,21 +271,22 @@ namespace _Incidence {
      * 
      * Complexity: O(1)
      * 
-     * Default implementation: incidence_view<_G, false, void>(incidence_iterator<_G, false, void>(__g, uid),
-                                               ranges::end(edges(__g, uid)))
+     * Default implementation: incidence_view<G, false, void>(incidence_iterator<G, false, void>(g, uid),
+                                               ranges::end(edges(g, uid)))
      * 
      * @tparam G The graph type.
      * @param g A graph instance.
      * @param uid Vertex id to get the outgoing edges for.
      * @return The range of outgoing edges on a vertex with value_type of edge_descriptor<vertex_id_t<G>, false, edge_reference_t<G>>.
     */
-    template <class _G>
-    [[nodiscard]] constexpr auto operator()(_G&& __g, vertex_id_t<_G>& uid) const noexcept(_Choice_all<_G>._No_throw) {
-      if constexpr (_Choice_all<_G>()._Strategy == _St_all_opt::_Non_member) {
-        return incidence(std::forward<_G>(__g, uid));
+    template <class G>
+    [[nodiscard]] constexpr auto operator()(G&& g, vertex_id_t<G>& uid) const noexcept(_Choice_all<G>._No_throw) {
+      if constexpr (_Choice_all<G>()._Strategy == _St_all_opt::_Non_member) {
+        return incidence(std::forward<G>(g, uid));
       } else {
-        return incidence_view<_G, false, void>(incidence_iterator<_G, false, void>(__g, uid),
-                                               ranges::end(edges(__g, uid)));
+        return incidence_view<G, false, void>(
+              incidence_iterator<G, false, void>(forward<decltype(g)>(g), forward<decltype(uid)>(uid)),
+              ranges::end(edges(g, uid)));
       }
     }
 
@@ -301,8 +295,8 @@ namespace _Incidence {
      * 
      * Complexity: O(1)
      * 
-     * Default implementation: incidence_view<_G, false, EVF>(incidence_iterator<_G, false, EVF>(__g, uid, value_fn),
-     *                                                        ranges::end(edges(__g, uid)));
+     * Default implementation: incidence_view<G, false, EVF>(incidence_iterator<G, false, EVF>(g, uid, value_fn),
+     *                                                        ranges::end(edges(g, uid)));
      * 
      * @tparam G The graph type.
      * @param g A graph instance.
@@ -310,15 +304,17 @@ namespace _Incidence {
      * @param value_fn(edge_reference_t<G>) that returns a edge value.
      * @return The range of all outgoing edges of a vertex with value_type of edge_descriptor<vertex_id_t<G>, false, edge_reference<G>, decltype(value_fn())>.
     */
-    template <class _G, class EVF>
-    requires invocable<EVF, edge_reference_t<_G>>
-    [[nodiscard]] constexpr auto operator()(_G&& __g, vertex_id_t<_G> uid, EVF&& value_fn) const
-          noexcept(_Choice_all_evf<_G>._No_throw) {
-      if constexpr (_Choice_all_evf<_G>()._Strategy == _St_all_opt::_Non_member) {
-        return incidence(std::forward<_G>(__g), uid, value_fn);
+    template <class G, class EVF>
+    requires invocable<EVF, edge_reference_t<G>>
+    [[nodiscard]] constexpr auto operator()(G&& g, vertex_id_t<G> uid, EVF&& value_fn) const
+          noexcept(_Choice_all_evf<G, EVF>._No_throw) {
+      if constexpr (_Choice_all_evf<G, EVF>()._Strategy == _St_all_opt::_Non_member) {
+        return incidence(std::forward<G>(g), uid, value_fn);
       } else {
-        return incidence_view<_G, false, EVF>(incidence_iterator<_G, false, EVF>(__g, uid, value_fn),
-                                              ranges::end(edges(__g, uid)));
+        return incidence_view<G, false, EVF>(incidence_iterator<G, false, EVF>(forward<decltype(g)>(g),
+                                                                               forward<decltype(uid)>(uid),
+                                                                               forward<decltype(value_fn)>(value_fn)),
+                                             ranges::end(edges(g, uid)));
       }
     }
   };

@@ -719,8 +719,8 @@ namespace _Vertices_depth_first_search {
      * @return A range of all vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>, decltype(vvf())>.
     */
     template <adjacency_list G, class VVF, class Stack = stack<dfs_element<G>>, class Alloc = allocator<bool>>
-    requires ranges::random_access_range<vertex_range_t<G>> && integral<vertex_id_t<G>> &&
-             invocable<VVF, vertex_t<G>> && _detail::is_allocator_v<Alloc>
+    requires ranges::random_access_range<vertex_range_t<G>> && invocable<VVF, vertex_t<G>> &&
+             _detail::is_allocator_v<Alloc>
     [[nodiscard]] constexpr auto operator()(G&& g, vertex_id_t<G>&& seed, VVF&& vvf, const Alloc& alloc = Alloc()) const
           noexcept(_Choice_all_vvf<G, VVF, Alloc>._No_throw) {
       if constexpr (_Choice_all_vvf<G, VVF, Alloc>()._Strategy == _St_all_opt::_Non_member) {
@@ -811,8 +811,7 @@ namespace _Edges_depth_first_search {
      * @return The range of outgoing edges on a vertex with value_type of edge_descriptor<vertex_id_t<G>, false, edge_reference_t<G>>.
     */
     template <adjacency_list G, class Stack = stack<dfs_element<G>>, class Alloc = allocator<bool>>
-    requires ranges::random_access_range<vertex_range_t<G>> && integral<vertex_id_t<G>> &&
-             _detail::is_allocator_v<Alloc>
+    requires ranges::random_access_range<vertex_range_t<G>> && _detail::is_allocator_v<Alloc>
     [[nodiscard]] constexpr auto operator()(G&& g, vertex_id_t<G>&& seed, const Alloc& alloc = Alloc()) const
           noexcept(_Choice_all<G, Alloc>._No_throw) {
       if constexpr (_Choice_all<G, Alloc>()._Strategy == _St_all_opt::_Non_member) {
@@ -846,8 +845,8 @@ namespace _Edges_depth_first_search {
      * @return The range of all outgoing edges of a vertex with value_type of edge_descriptor<vertex_id_t<G>, false, edge_reference<G>, decltype(evf())>.
     */
     template <adjacency_list G, class EVF, class Stack = stack<dfs_element<G>>, class Alloc = allocator<bool>>
-    requires ranges::random_access_range<vertex_range_t<G>> && integral<vertex_id_t<G>> &&
-             invocable<EVF, edge_reference_t<G>> && _detail::is_allocator_v<Alloc>
+    requires ranges::random_access_range<vertex_range_t<G>> && invocable<EVF, edge_reference_t<G>> &&
+             _detail::is_allocator_v<Alloc>
     [[nodiscard]] constexpr auto operator()(G&& g, vertex_id_t<G>&& seed, EVF&& evf, const Alloc& alloc = Alloc()) const
           noexcept(_Choice_all_evf<G, EVF, Alloc>._No_throw) {
       if constexpr (_Choice_all_evf<G, EVF, Alloc>()._Strategy == _St_all_opt::_Non_member) {
@@ -942,8 +941,7 @@ namespace _Sourced_edges_depth_first_search {
      * @return The range of depth-first edges on a vertex with value_type of edge_descriptor<vertex_id_t<G>, true, edge_reference_t<G>>.
     */
     template <adjacency_list G, class Stack = stack<dfs_element<G>>, class Alloc = allocator<bool>>
-    requires ranges::random_access_range<vertex_range_t<G>> && integral<vertex_id_t<G>> &&
-             _detail::is_allocator_v<Alloc>
+    requires ranges::random_access_range<vertex_range_t<G>> && _detail::is_allocator_v<Alloc>
     [[nodiscard]] constexpr auto operator()(G&& g, vertex_id_t<G>&& seed, const Alloc& alloc = Alloc()) const
           noexcept(_Choice_all<G, Alloc>._No_throw) {
       if constexpr (_Choice_all<G, Alloc>()._Strategy == _St_all_opt::_Non_member) {
@@ -978,8 +976,8 @@ namespace _Sourced_edges_depth_first_search {
      * @return The range of depth-first edges of a vertex with value_type of edge_descriptor<vertex_id_t<G>, true, edge_reference<G>, decltype(evf())>.
     */
     template <adjacency_list G, class EVF, class Stack = stack<dfs_element<G>>, class Alloc = allocator<bool>>
-    requires ranges::random_access_range<vertex_range_t<G>> && integral<vertex_id_t<G>> &&
-             invocable<EVF, edge_reference_t<G>> && _detail::is_allocator_v<Alloc>
+    requires ranges::random_access_range<vertex_range_t<G>> && invocable<EVF, edge_reference_t<G>> &&
+             _detail::is_allocator_v<Alloc>
     [[nodiscard]] constexpr auto operator()(G&& g, vertex_id_t<G>&& seed, EVF&& evf, const Alloc& alloc = Alloc()) const
           noexcept(_Choice_all_evf<G, EVF, Alloc>._No_throw) {
       if constexpr (_Choice_all_evf<G, EVF, Alloc>()._Strategy == _St_all_opt::_Non_member) {

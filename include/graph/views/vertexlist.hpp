@@ -190,52 +190,51 @@ namespace _Vertexlist {
   void vertexlist();
 #  endif                                     // ^^^ workaround ^^^
 
-  template <class _G>
-  concept _Has_all = _Has_class_or_enum_type<_G> //
-                     && requires(_G&& __g) {
-                          { _Fake_copy_init(vertexlist(__g)) } -> ranges::forward_range;
+  template <class G>
+  concept _Has_all = _Has_class_or_enum_type<G> //
+                     && requires(G&& g) {
+                          { _Fake_copy_init(vertexlist(g)) } -> ranges::forward_range;
                         };
 
-  template <class _G, class VVF>
-  concept _Has_all_vvf = _Has_class_or_enum_type<_G>               //
-                         && invocable<VVF, vertex_reference_t<_G>> //
-                         && requires(_G&& __g, const VVF& vvf) {
-                              { _Fake_copy_init(vertexlist(__g, vvf)) } -> ranges::forward_range;
+  template <class G, class VVF>
+  concept _Has_all_vvf = _Has_class_or_enum_type<G>               //
+                         && invocable<VVF, vertex_reference_t<G>> //
+                         && requires(G&& g, const VVF& vvf) {
+                              { _Fake_copy_init(vertexlist(g, vvf)) } -> ranges::forward_range;
                             };
 
-  template <class _G>
-  concept _Has_iter_rng = _Has_class_or_enum_type<_G> //
-                          && requires(_G&& __g, vertex_iterator_t<_G> ui, vertex_iterator_t<_G> vi) {
-                               { _Fake_copy_init(vertexlist(__g, ui, vi)) } -> ranges::forward_range;
+  template <class G>
+  concept _Has_iter_rng = _Has_class_or_enum_type<G> //
+                          && requires(G&& g, vertex_iterator_t<G> ui, vertex_iterator_t<G> vi) {
+                               { _Fake_copy_init(vertexlist(g, ui, vi)) } -> ranges::forward_range;
                              };
 
-  template <class _G, class VVF>
-  concept _Has_iter_rng_vvf =
-        _Has_class_or_enum_type<_G> //
-        && requires(_G&& __g, vertex_iterator_t<_G> ui, vertex_iterator_t<_G> vi, const VVF& vvf) {
-             { _Fake_copy_init(vertexlist(__g, ui, vi, vvf)) } -> ranges::forward_range;
-           };
+  template <class G, class VVF>
+  concept _Has_iter_rng_vvf = _Has_class_or_enum_type<G> //
+                              && requires(G&& g, vertex_iterator_t<G> ui, vertex_iterator_t<G> vi, const VVF& vvf) {
+                                   { _Fake_copy_init(vertexlist(g, ui, vi, vvf)) } -> ranges::forward_range;
+                                 };
 
-  template <class _G>
-  concept _Has_rng = _Has_class_or_enum_type<_G> //
-                     && requires(_G&& __g, vertex_range_t<_G> vrng) {
-                          { _Fake_copy_init(vertexlist(__g, vrng)) } -> ranges::forward_range;
+  template <class G>
+  concept _Has_rng = _Has_class_or_enum_type<G> //
+                     && requires(G&& g, vertex_range_t<G> vrng) {
+                          { _Fake_copy_init(vertexlist(g, vrng)) } -> ranges::forward_range;
                         };
 
-  template <class _G, class VVF>
-  concept _Has_rng_vvf = _Has_class_or_enum_type<_G> //
-                         && requires(_G&& __g, vertex_range_t<_G> vrng, const VVF& vvf) {
-                              { _Fake_copy_init(vertexlist(__g, vrng, vvf)) } -> ranges::forward_range;
+  template <class G, class VVF>
+  concept _Has_rng_vvf = _Has_class_or_enum_type<G> //
+                         && requires(G&& g, vertex_range_t<G> vrng, const VVF& vvf) {
+                              { _Fake_copy_init(vertexlist(g, vrng, vvf)) } -> ranges::forward_range;
                             };
 
 
   class _Cpo {
   private:
-    template <class _G>
+    template <class G>
     struct _value_fnc {
       _value_fnc() = default;
       // return of int is a placeholder; actual VVF may return a diff type
-      constexpr int operator()(vertex_reference_t<_G>) const noexcept;
+      constexpr int operator()(vertex_reference_t<G>) const noexcept;
     };
 
     enum class _St_all_opt { _None, _Non_member };
@@ -245,82 +244,82 @@ namespace _Vertexlist {
     enum class _St_rng_opt { _None, _Non_member };
     enum class _St_rng_vvf_opt { _None, _Non_member };
 
-    template <class _G>
+    template <class G>
     [[nodiscard]] static consteval _Choice_t<_St_all_opt> _Choose_all_opt() noexcept {
-      if constexpr (_Has_all<_G>) {
-        return {_St_all_opt::_Non_member, noexcept(_Fake_copy_init(vertexlist(declval<_G>())))};
+      if constexpr (_Has_all<G>) {
+        return {_St_all_opt::_Non_member, noexcept(_Fake_copy_init(vertexlist(declval<G>())))};
       } else {
         return {_St_all_opt::_None};
       }
     }
-    template <class _G>
-    static constexpr _Choice_t<_St_all_opt> _Choice_all = _Choose_all_opt<_G>();
+    template <class G>
+    static constexpr _Choice_t<_St_all_opt> _Choice_all = _Choose_all_opt<G>();
 
-    template <class _G>
+    template <class G>
     [[nodiscard]] static consteval _Choice_t<_St_all_vvf_opt> _Choose_all_vvf_opt() noexcept {
-      if constexpr (_Has_all_vvf<_G>) {
+      if constexpr (_Has_all_vvf<G>) {
         return {_St_all_vvf_opt::_Non_member,
-                noexcept(_Fake_copy_init(vertexlist(std::declval<_G>(), std::declval<_value_fnc>())))};
+                noexcept(_Fake_copy_init(vertexlist(std::declval<G>(), std::declval<_value_fnc>())))};
       } else {
         return {_St_all_vvf_opt::_None};
       }
     }
-    template <class _G>
-    static constexpr _Choice_t<_St_all_vvf_opt> _Choice_all_vvf = _Choose_all_vvf_opt<_G>();
+    template <class G>
+    static constexpr _Choice_t<_St_all_vvf_opt> _Choice_all_vvf = _Choose_all_vvf_opt<G>();
 
-    template <class _G>
+    template <class G>
     [[nodiscard]] static consteval _Choice_t<_St_iter_rng_opt> _Choose_iter_rng_opt() noexcept {
-      if constexpr (_Has_iter_rng<_G>) {
-        return {_St_iter_rng_opt::_Non_member, noexcept(_Fake_copy_init(vertexlist(declval<_G>(), //
-                                                                                   declval<vertex_iterator_t<_G>>(),
-                                                                                   declval<vertex_iterator_t<_G>>())))};
+      if constexpr (_Has_iter_rng<G>) {
+        return {_St_iter_rng_opt::_Non_member, noexcept(_Fake_copy_init(vertexlist(declval<G>(), //
+                                                                                   declval<vertex_iterator_t<G>>(),
+                                                                                   declval<vertex_iterator_t<G>>())))};
       } else {
         return {_St_iter_rng_opt::_None};
       }
     }
-    template <class _G>
-    static constexpr _Choice_t<_St_iter_rng_opt> _Choice_iter_rng = _Choose_iter_rng_opt<_G>();
+    template <class G>
+    static constexpr _Choice_t<_St_iter_rng_opt> _Choice_iter_rng = _Choose_iter_rng_opt<G>();
 
-    template <class _G>
+    template <class G>
     [[nodiscard]] static consteval _Choice_t<_St_iter_rng_vvf_opt> _Choose_iter_rng_vvf_opt() noexcept {
-      if constexpr (_Has_iter_rng<_G>) {
+      if constexpr (_Has_iter_rng<G>) {
         return {_St_iter_rng_vvf_opt::_Non_member,
-                noexcept(_Fake_copy_init(vertexlist(declval<_G>(),                    //
-                                                    declval<vertex_iterator_t<_G>>(), //
-                                                    declval<vertex_iterator_t<_G>>(), //
+                noexcept(_Fake_copy_init(vertexlist(declval<G>(),                    //
+                                                    declval<vertex_iterator_t<G>>(), //
+                                                    declval<vertex_iterator_t<G>>(), //
                                                     std::declval<_value_fnc>())))};
       } else {
         return {_St_iter_rng_vvf_opt::_None};
       }
     }
-    template <class _G>
-    static constexpr _Choice_t<_St_iter_rng_vvf_opt> _Choice_iter_rng_vvf = _Choose_iter_rng_vvf_opt<_G>();
+    template <class G>
+    static constexpr _Choice_t<_St_iter_rng_vvf_opt> _Choice_iter_rng_vvf = _Choose_iter_rng_vvf_opt<G>();
 
-    template <class _G>
+    template <class G>
     [[nodiscard]] static consteval _Choice_t<_St_rng_opt> _Choose_rng_opt() noexcept {
-      if constexpr (_Has_rng<_G>) {
-        return {_St_rng_opt::_Non_member, noexcept(_Fake_copy_init(vertexlist(declval<_G>(), //
-                                                                              declval<vertex_range_t<_G>>())))};
+      if constexpr (_Has_rng<G>) {
+        return {_St_rng_opt::_Non_member, noexcept(_Fake_copy_init(vertexlist(declval<G>(), //
+                                                                              declval<vertex_range_t<G>>())))};
       } else {
         return {_St_rng_opt::_None};
       }
     }
-    template <class _G>
-    static constexpr _Choice_t<_St_rng_opt> _Choice_rng = _Choose_rng_opt<_G>();
+    template <class G>
+    static constexpr _Choice_t<_St_rng_opt> _Choice_rng = _Choose_rng_opt<G>();
 
-    template <class _G>
+    template <class G>
     [[nodiscard]] static consteval _Choice_t<_St_rng_vvf_opt> _Choose_rng_vvf_opt() noexcept {
-      if constexpr (_Has_rng<_G>) {
+      if constexpr (_Has_rng<G>) {
         return {_St_rng_vvf_opt::_Non_member,
-                noexcept(_Fake_copy_init(vertexlist(declval<_G>(),                 //
-                                                    declval<vertex_range_t<_G>>(), //
+                noexcept(_Fake_copy_init(vertexlist(declval<G>(),                 //
+                                                    declval<vertex_range_t<G>>(), //
                                                     std::declval<_value_fnc>())))};
       } else {
         return {_St_rng_vvf_opt::_None};
       }
     }
-    template <class _G>
-    static constexpr _Choice_t<_St_rng_vvf_opt> _Choice_rng_vvf = _Choose_rng_vvf_opt<_G>();
+    template <class G>
+    static constexpr _Choice_t<_St_rng_vvf_opt> _Choice_rng_vvf = _Choose_rng_vvf_opt<G>();
 
 
   public:
@@ -335,12 +334,12 @@ namespace _Vertexlist {
      * @param g A graph instance.
      * @return A range of all vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>>.
     */
-    template <class _G>
-    [[nodiscard]] constexpr auto operator()(_G&& __g) const noexcept(_Choice_all<_G>._No_throw) {
-      if constexpr (_Choice_all<_G>()._Strategy == _St_all_opt::_Non_member) {
-        return vertexlist(std::forward<_G>(__g));
+    template <class G>
+    [[nodiscard]] constexpr auto operator()(G&& g) const noexcept(_Choice_all<G>._No_throw) {
+      if constexpr (_Choice_all<G>()._Strategy == _St_all_opt::_Non_member) {
+        return vertexlist(std::forward<G>(g));
       } else {
-        return vertexlist_view<_G>(vertices(std::forward<_G>(__g)));
+        return vertexlist_view<G>(vertices(std::forward<G>(g)));
       }
     }
 
@@ -356,13 +355,13 @@ namespace _Vertexlist {
      * @param value_fn(vertex_reference_t<G>) that returns a vertex value.
      * @return A range of all vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>, decltype(value_fn())>.
     */
-    template <class _G, class VVF>
-    requires invocable<VVF, vertex_reference_t<_G>>
-    [[nodiscard]] constexpr auto operator()(_G&& __g, VVF&& value_fn) const noexcept(_Choice_all_vvf<_G>._No_throw) {
-      if constexpr (_Choice_all_vvf<_G>()._Strategy == _St_all_opt::_Non_member) {
-        return vertexlist(std::forward<_G>(__g), value_fn);
+    template <class G, class VVF>
+    requires invocable<VVF, vertex_reference_t<G>>
+    [[nodiscard]] constexpr auto operator()(G&& g, VVF&& value_fn) const noexcept(_Choice_all_vvf<G>._No_throw) {
+      if constexpr (_Choice_all_vvf<G>()._Strategy == _St_all_opt::_Non_member) {
+        return vertexlist(std::forward<G>(g), value_fn);
       } else {
-        return vertexlist_view<_G>(vertices(std::forward<_G>(__g), value_fn));
+        return vertexlist_view<G>(vertices(std::forward<G>(g), value_fn));
       }
     }
 
@@ -379,16 +378,15 @@ namespace _Vertexlist {
      * @param last  Last iterator in the vertex range.
      * @return A range [first,last) of vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>>.
     */
-    template <class _G>
-    requires ranges::random_access_range<vertex_range_t<_G>>
-    [[nodiscard]] constexpr auto operator()(_G&& __g, vertex_iterator_t<_G>& first, vertex_iterator_t<_G>& last) const
-          noexcept(_Choice_iter_rng<_G&>._No_throw) {
-      if constexpr (_Choice_iter_rng<_G> == _St_iter_rng_opt::_Non_member) {
-        return vertexlist(std::forward(__g), first, last);
+    template <class G>
+    requires ranges::random_access_range<vertex_range_t<G>>
+    [[nodiscard]] constexpr auto operator()(G&& g, vertex_iterator_t<G>& first, vertex_iterator_t<G>& last) const
+          noexcept(_Choice_iter_rng<G&>._No_throw) {
+      if constexpr (_Choice_iter_rng<G> == _St_iter_rng_opt::_Non_member) {
+        return vertexlist(std::forward(g), first, last);
       } else {
-        using iterator_type = vertexlist_iterator<_G>;
-        return vertexlist_view<_G>(iterator_type(first, static_cast<vertex_id_t<_G>>(first - begin(vertices(__g)))),
-                                   last);
+        using iterator_type = vertexlist_iterator<G>;
+        return vertexlist_view<G>(iterator_type(first, static_cast<vertex_id_t<G>>(first - begin(vertices(g)))), last);
       }
     }
 
@@ -405,17 +403,17 @@ namespace _Vertexlist {
      * @param last  Last iterator in the vertex range.
      * @return A range [first,last) of vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>>.
     */
-    template <class _G, class VVF>
-    requires ranges::random_access_range<vertex_range_t<_G>> && invocable<VVF, vertex_reference_t<_G>>
+    template <class G, class VVF>
+    requires ranges::random_access_range<vertex_range_t<G>> && invocable<VVF, vertex_reference_t<G>>
     [[nodiscard]] constexpr auto
-    operator()(_G&& __g, vertex_iterator_t<_G>& first, vertex_iterator_t<_G>& last, VVF&& value_fn) const
-          noexcept(_Choice_iter_rng<_G&>._No_throw) {
-      if constexpr (_Choice_iter_rng_vvf<_G> == _St_iter_rng_vvf_opt::_Non_member) {
-        return vertexlist(std::forward(__g), first, last, value_fn);
+    operator()(G&& g, vertex_iterator_t<G>& first, vertex_iterator_t<G>& last, VVF&& value_fn) const
+          noexcept(_Choice_iter_rng<G&>._No_throw) {
+      if constexpr (_Choice_iter_rng_vvf<G> == _St_iter_rng_vvf_opt::_Non_member) {
+        return vertexlist(std::forward(g), first, last, value_fn);
       } else {
-        using iterator_type = vertexlist_iterator<_G, VVF>;
-        return vertexlist_view<_G>(iterator_type(first, static_cast<vertex_id_t<_G>>(first - begin(vertices(__g)))),
-                                   last, value_fn);
+        using iterator_type = vertexlist_iterator<G, VVF>;
+        return vertexlist_view<G>(iterator_type(first, static_cast<vertex_id_t<G>>(first - begin(vertices(g)))), last,
+                                  value_fn);
       }
     }
 
@@ -431,17 +429,16 @@ namespace _Vertexlist {
      * @param rng   Range of vertices in the graph.
      * @return A range of vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>>.
     */
-    template <class _G>
-    requires ranges::random_access_range<vertex_range_t<_G>>
-    [[nodiscard]] constexpr auto operator()(_G&& __g, vertex_range_t<_G>& rng) const
-          noexcept(_Choice_rng<_G&>._No_throw) {
-      if constexpr (_Choice_rng<_G> == _St_rng_opt::_Non_member) {
-        return vertexlist(std::forward(__g), rng);
+    template <class G>
+    requires ranges::random_access_range<vertex_range_t<G>>
+    [[nodiscard]] constexpr auto operator()(G&& g, vertex_range_t<G>& rng) const noexcept(_Choice_rng<G&>._No_throw) {
+      if constexpr (_Choice_rng<G> == _St_rng_opt::_Non_member) {
+        return vertexlist(std::forward(g), rng);
       } else {
-        using iterator_type = vertexlist_iterator<_G>;
-        return vertexlist_view<_G>(
-              iterator_type(ranges::begin(rng),                                                       //
-                            static_cast<vertex_id_t<_G>>(ranges::begin(rng) - begin(vertices(__g)))), //
+        using iterator_type = vertexlist_iterator<G>;
+        return vertexlist_view<G>(
+              iterator_type(ranges::begin(rng),                                                    //
+                            static_cast<vertex_id_t<G>>(ranges::begin(rng) - begin(vertices(g)))), //
               ranges::end(rng));
       }
     }
@@ -459,18 +456,18 @@ namespace _Vertexlist {
      * @param value_fn Projection function.
      * @return A range of vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>, declval<vertex_fn()>>.
     */
-    template <class _G, class VVF>
-    requires ranges::random_access_range<vertex_range_t<_G>> && invocable<VVF, vertex_reference_t<_G>>
-    [[nodiscard]] constexpr auto operator()(_G&& __g, vertex_range_t<_G>& rng, VVF&& value_fn) const
-          noexcept(_Choice_rng<_G&>._No_throw) {
-      if constexpr (_Choice_rng_vvf<_G> == _St_rng_vvf_opt::_Non_member) {
-        return vertexlist(std::forward(__g), rng, value_fn);
+    template <class G, class VVF>
+    requires ranges::random_access_range<vertex_range_t<G>> && invocable<VVF, vertex_reference_t<G>>
+    [[nodiscard]] constexpr auto operator()(G&& g, vertex_range_t<G>& rng, VVF&& value_fn) const
+          noexcept(_Choice_rng<G&>._No_throw) {
+      if constexpr (_Choice_rng_vvf<G> == _St_rng_vvf_opt::_Non_member) {
+        return vertexlist(std::forward(g), rng, value_fn);
       } else {
-        using iterator_type = vertexlist_iterator<_G, VVF>;
-        return vertexlist_view<_G>(
-              iterator_type(ranges::begin(rng),                                                       //
-                            static_cast<vertex_id_t<_G>>(ranges::begin(rng) - begin(vertices(__g)))), //
-              ranges::end(rng),                                                                       //
+        using iterator_type = vertexlist_iterator<G, VVF>;
+        return vertexlist_view<G>(
+              iterator_type(ranges::begin(rng),                                                    //
+                            static_cast<vertex_id_t<G>>(ranges::begin(rng) - begin(vertices(g)))), //
+              ranges::end(rng),                                                                    //
               value_fn);
       }
     }
