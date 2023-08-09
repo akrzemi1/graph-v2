@@ -1,11 +1,11 @@
 #include <catch2/catch.hpp>
-#include "graphviz_output.hpp"
 #include "graph/graph.hpp"
 #include "graph/views/vertexlist.hpp"
 #include "graph/views/neighbors.hpp"
 #include "graph/container/csr_graph.hpp"
 #include "graph/algorithm/dijkstra_clrs.hpp"
 #include "rr_adaptor.hpp"
+#include "graphviz_output.hpp"
 #include <iostream>
 #include <list>
 #include <cassert>
