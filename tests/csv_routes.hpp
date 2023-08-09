@@ -29,7 +29,6 @@
 #include "graph/views/vertexlist.hpp"
 #include "graph/views/incidence.hpp"
 #include "graph/views/depth_first_search.hpp"
-#include "graph/views//depth_first_search.hpp"
 #include <set>
 #include <map>
 #include <deque>

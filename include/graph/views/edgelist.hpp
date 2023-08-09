@@ -248,6 +248,216 @@ private: // member variables
 template <class G, class EVF>
 using edgelist_view = ranges::subrange<edgelist_iterator<G, EVF>, vertex_iterator_t<G>>;
 
+
+#if defined(NEW_CPO)
+
+namespace std::graph::views {
+
+  // edgelist(g)               -> edge_descriptor[uid,vid,uv]
+  // edgelist(g,fn)            -> edge_descriptor[uid,vid,uv,value]
+  // edgelist(g,uid,vid)       -> edge_descriptor[uid,vid,uv]
+  // edgelist(g,uid,vid,fn)    -> edge_descriptor[uid,vid,uv,value]
+  namespace _Edgelist {
+#  if defined(__clang__) || defined(__EDG__) // TRANSITION, VSO-1681199
+    void edgelist() = delete;                // Block unqualified name lookup
+#  else                                      // ^^^ no workaround / workaround vvv
+    void edgelist();
+#  endif                                     // ^^^ workaround ^^^
+
+    template <class G>
+    concept _Has_all = _Has_class_or_enum_type<G> //
+                       && requires(G&& g) {
+                            { _Fake_copy_init(edgelist(g)) } -> ranges::forward_range;
+                          };
+
+    template <class G, class EVF>
+    concept _Has_all_evf = _Has_class_or_enum_type<G>             //
+                           && invocable<EVF, edge_reference_t<G>> //
+                           && requires(G&& g, EVF& evf) {
+                                { _Fake_copy_init(edgelist(g, evf)) } -> ranges::forward_range;
+                              };
+
+    template <class G>
+    concept _Has_iter_rng = _Has_class_or_enum_type<G> //
+                            && requires(G&& g, vertex_id_t<G> uid, vertex_id_t<G> vid) {
+                                 { _Fake_copy_init(edgelist(g, uid, vid)) } -> ranges::forward_range;
+                               };
+
+    template <class G, class EVF>
+    concept _Has_iter_rng_evf = _Has_class_or_enum_type<G>             //
+                                && invocable<EVF, edge_reference_t<G>> //
+                                && requires(G&& g, vertex_id_t<G> uid, vertex_id_t<G> vid, EVF& evf) {
+                                     { _Fake_copy_init(edgelist(g, uid, vid, evf)) } -> ranges::forward_range;
+                                   };
+
+    class _Cpo {
+    private:
+      enum class _St_all_opt { _None, _Non_member };
+      enum class _St_all_evf_opt { _None, _Non_member };
+      enum class _St_iter_rng_opt { _None, _Non_member };
+      enum class _St_iter_rng_evf_opt { _None, _Non_member };
+      enum class _St_rng_opt { _None, _Non_member };
+      enum class _St_rng_evf_opt { _None, _Non_member };
+
+      template <class G>
+      [[nodiscard]] static consteval _Choice_t<_St_all_opt> _Choose_all_opt() noexcept {
+        if constexpr (_Has_all<G>) {
+          return {_St_all_opt::_Non_member, noexcept(_Fake_copy_init(edgelist(declval<G>())))};
+        } else {
+          return {_St_all_opt::_None};
+        }
+      }
+      template <class G>
+      static constexpr _Choice_t<_St_all_opt> _Choice_all = _Choose_all_opt<G>();
+
+      template <class G, class EVF>
+      [[nodiscard]] static consteval _Choice_t<_St_all_evf_opt> _Choose_all_evf_opt() noexcept {
+        if constexpr (_Has_all_evf<G, EVF>) {
+          return _Choice_t<_St_all_evf_opt>{_St_all_evf_opt::_Non_member,
+                                            noexcept(_Fake_copy_init(edgelist(declval<G>(), declval<EVF>())))};
+        } else {
+          return {_St_all_evf_opt::_None};
+        }
+      }
+      template <class G, class EVF>
+      static constexpr _Choice_t<_St_all_evf_opt> _Choice_all_evf = _Choose_all_evf_opt<G, EVF>();
+
+      template <class G>
+      [[nodiscard]] static consteval _Choice_t<_St_iter_rng_opt> _Choose_iter_rng_opt() noexcept {
+        if constexpr (_Has_iter_rng<G>) {
+          return {
+                _St_iter_rng_opt::_Non_member,
+                noexcept(_Fake_copy_init(edgelist(declval<G>(), //
+                                                  declval<vertex_iterator_t<G>>(), declval<vertex_iterator_t<G>>())))};
+        } else {
+          return {_St_iter_rng_opt::_None};
+        }
+      }
+      template <class G>
+      static constexpr _Choice_t<_St_iter_rng_opt> _Choice_iter_rng = _Choose_iter_rng_opt<G>();
+
+      template <class G, class EVF>
+      [[nodiscard]] static consteval _Choice_t<_St_iter_rng_evf_opt> _Choose_iter_rng_evf_opt() noexcept {
+        if constexpr (_Has_iter_rng_evf<G, EVF>) {
+          return {_St_iter_rng_evf_opt::_Non_member,
+                  noexcept(_Fake_copy_init(edgelist(declval<G>(),                    //
+                                                    declval<vertex_iterator_t<G>>(), //
+                                                    declval<vertex_iterator_t<G>>(), //
+                                                    declval<EVF>())))};
+        } else {
+          return {_St_iter_rng_evf_opt::_None};
+        }
+      }
+      template <class G>
+      static constexpr _Choice_t<_St_iter_rng_evf_opt> _Choice_iter_rng_evf = _Choose_iter_rng_evf_opt<G>();
+
+
+    public:
+      /**
+       * @brief Get a edgelist of a vertices in a graph.
+       * 
+       * Complexity: O(1)
+       * 
+       * Default implementation: returns edgelist_view<G>(vertices(std::forward<G>(g)))
+       * 
+       * @tparam G The graph type.
+       * @param g A graph instance.
+       * @return A range of all vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>>.
+      */
+      template <class G>
+      [[nodiscard]] constexpr auto operator()(G&& g) const noexcept(_Choice_all<G>._No_throw) {
+        if constexpr (_Choice_all<G>()._Strategy == _St_all_opt::_Non_member) {
+          return edgelist(forward<G>(g));
+        } else {
+          using iterator_type = edgelist_iterator<G, void>;
+          return edgelist_view<G, void>(iterator_type(g), ranges::end(vertices(g)));
+        }
+      }
+
+      /**
+       * @brief Get a edgelist of all vertices in a graph with projected values.
+       * 
+       * Complexity: O(1)
+       * 
+       * Default implementation: returns edgelist_view<G>(vertices(std::forward<G>(g),value_fn))
+       * 
+       * @tparam G The graph type.
+       * @param g A graph instance.
+       * @param value_fn(edge_reference_t<G>) that returns a vertex value.
+       * @return A range of all vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>, decltype(value_fn())>.
+      */
+      template <class G, class EVF>
+      requires invocable<EVF, edge_reference_t<G>>
+      [[nodiscard]] constexpr auto operator()(G&& g, EVF&& evf) const noexcept(_Choice_all_evf<G, EVF>._No_throw) {
+        if constexpr (_Choice_all_evf<G, EVF>()._Strategy == _St_all_opt::_Non_member) {
+          return edgelist(forward<G>(g), evf);
+        } else {
+          using iterator_type = edgelist_iterator<G, EVF>;
+          return edgelist_view<G, EVF>(iterator_type(g, evf), ranges::end(vertices(g)));
+        }
+      }
+
+      /**
+       * @brief Get the edgelist range for a graph for an interator range.
+       * 
+       * Complexity: O(1)
+       * 
+       * Default implementation: returns edgelist(g, first, last)
+       * 
+       * @tparam G The graph type.
+       * @param g     A graph instance.
+       * @param first First iterator in the vertex range.
+       * @param last  Last iterator in the vertex range.
+       * @return A range [first,last) of vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>>.
+      */
+      template <class G>
+      requires ranges::random_access_range<vertex_range_t<G>>
+      [[nodiscard]] constexpr auto operator()(G&& g, vertex_iterator_t<G>& first, vertex_iterator_t<G>& last) const
+            noexcept(_Choice_iter_rng<G&>._No_throw) {
+        if constexpr (_Choice_iter_rng<G> == _St_iter_rng_opt::_Non_member) {
+          return edgelist(forward(g), first, last);
+        } else {
+          using iterator_type = edgelist_iterator<G, void>;
+          return edgelist_view<G, void>(iterator_type(g, find_vertex(g, first)), find_vertex(g, last));
+        }
+      }
+
+      /**
+       * @brief Get the edgelist range for a graph for an iterator range with projected values.
+       * 
+       * Complexity: O(1)
+       * 
+       * Default implementation: returns edgelist_view<G>(g, first, last, value_fn)
+       * 
+       * @tparam G The graph type.
+       * @param g     A graph instance.
+       * @param first First iterator in the vertex range.
+       * @param last  Last iterator in the vertex range.
+       * @return A range [first,last) of vertices with value_type of vertex_descriptor<vertex_id_t<G>, vertex_t<G>>.
+      */
+      template <class G, class EVF>
+      requires ranges::random_access_range<vertex_range_t<G>> && invocable<EVF, edge_reference_t<G>>
+      [[nodiscard]] constexpr auto
+      operator()(G&& g, vertex_iterator_t<G>& first, vertex_iterator_t<G>& last, EVF&& evf) const
+            noexcept(_Choice_iter_rng<G&>._No_throw) {
+        if constexpr (_Choice_iter_rng_evf<G> == _St_iter_rng_evf_opt::_Non_member) {
+          return edgelist(forward(g), first, last, evf);
+        } else {
+          using iterator_type = edgelist_iterator<G, EVF>;
+          return edgelist_view<G, void>(iterator_type(g, find_vertex(g, first)), find_vertex(g, last), evf);
+        }
+      }
+    };
+  } // namespace _Edgelist
+
+  inline namespace _Cpos {
+    inline constexpr _Edgelist::_Cpo edgelist;
+  }
+
+} // namespace std::graph::views
+
+#else  // defined(NEW_CPO)
+
 namespace tag_invoke {
   // ranges
   TAG_INVOKE_DEF(edgelist); // edgelist(g)                 -> edges[uid,vid,uv]
@@ -332,3 +542,5 @@ constexpr auto edgelist(G&& g, vertex_id_t<G> first, vertex_id_t<G> last, const 
 
 
 } // namespace std::graph::views
+
+#endif // defined(NEW_CPO)

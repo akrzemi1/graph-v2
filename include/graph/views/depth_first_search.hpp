@@ -611,7 +611,7 @@ public:
 } // namespace std::graph
 
 
-#  ifdef NEW_CPO
+#  if defined(NEW_CPO)
 
 namespace std::graph::views {
 
@@ -1000,8 +1000,10 @@ inline namespace _Cpos {
   inline constexpr _Sourced_edges_depth_first_search::_Cpo sourced_edges_depth_first_search;
 }
 
+} // namespace std::graph::views
 
-#  else
+
+#  else // NEW_CPO
 namespace std::graph::tag_invoke {
 // vertices_depth_first_search CPO
 TAG_INVOKE_DEF(vertices_depth_first_search); // vertices_depth_first_search(g,seed)    -> vertices[vid,v]

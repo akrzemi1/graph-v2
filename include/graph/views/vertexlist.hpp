@@ -230,13 +230,6 @@ namespace _Vertexlist {
 
   class _Cpo {
   private:
-    template <class G>
-    struct _value_fnc {
-      _value_fnc() = default;
-      // return of int is a placeholder; actual VVF may return a diff type
-      constexpr int operator()(vertex_reference_t<G>) const noexcept;
-    };
-
     enum class _St_all_opt { _None, _Non_member };
     enum class _St_all_vvf_opt { _None, _Non_member };
     enum class _St_iter_rng_opt { _None, _Non_member };
@@ -255,17 +248,16 @@ namespace _Vertexlist {
     template <class G>
     static constexpr _Choice_t<_St_all_opt> _Choice_all = _Choose_all_opt<G>();
 
-    template <class G>
+    template <class G, class VVF>
     [[nodiscard]] static consteval _Choice_t<_St_all_vvf_opt> _Choose_all_vvf_opt() noexcept {
       if constexpr (_Has_all_vvf<G>) {
-        return {_St_all_vvf_opt::_Non_member,
-                noexcept(_Fake_copy_init(vertexlist(std::declval<G>(), std::declval<_value_fnc>())))};
+        return {_St_all_vvf_opt::_Non_member, noexcept(_Fake_copy_init(vertexlist(declval<G>(), declval<VVF>())))};
       } else {
         return {_St_all_vvf_opt::_None};
       }
     }
-    template <class G>
-    static constexpr _Choice_t<_St_all_vvf_opt> _Choice_all_vvf = _Choose_all_vvf_opt<G>();
+    template <class G, class VVF>
+    static constexpr _Choice_t<_St_all_vvf_opt> _Choice_all_vvf = _Choose_all_vvf_opt<G, VVF>();
 
     template <class G>
     [[nodiscard]] static consteval _Choice_t<_St_iter_rng_opt> _Choose_iter_rng_opt() noexcept {
@@ -280,20 +272,20 @@ namespace _Vertexlist {
     template <class G>
     static constexpr _Choice_t<_St_iter_rng_opt> _Choice_iter_rng = _Choose_iter_rng_opt<G>();
 
-    template <class G>
+    template <class G, class VVF>
     [[nodiscard]] static consteval _Choice_t<_St_iter_rng_vvf_opt> _Choose_iter_rng_vvf_opt() noexcept {
       if constexpr (_Has_iter_rng<G>) {
         return {_St_iter_rng_vvf_opt::_Non_member,
                 noexcept(_Fake_copy_init(vertexlist(declval<G>(),                    //
                                                     declval<vertex_iterator_t<G>>(), //
                                                     declval<vertex_iterator_t<G>>(), //
-                                                    std::declval<_value_fnc>())))};
+                                                    declval<VVF>())))};
       } else {
         return {_St_iter_rng_vvf_opt::_None};
       }
     }
-    template <class G>
-    static constexpr _Choice_t<_St_iter_rng_vvf_opt> _Choice_iter_rng_vvf = _Choose_iter_rng_vvf_opt<G>();
+    template <class G, class VVF>
+    static constexpr _Choice_t<_St_iter_rng_vvf_opt> _Choice_iter_rng_vvf = _Choose_iter_rng_vvf_opt<G, VVF>();
 
     template <class G>
     [[nodiscard]] static consteval _Choice_t<_St_rng_opt> _Choose_rng_opt() noexcept {
@@ -307,13 +299,13 @@ namespace _Vertexlist {
     template <class G>
     static constexpr _Choice_t<_St_rng_opt> _Choice_rng = _Choose_rng_opt<G>();
 
-    template <class G>
+    template <class G, class VVF>
     [[nodiscard]] static consteval _Choice_t<_St_rng_vvf_opt> _Choose_rng_vvf_opt() noexcept {
       if constexpr (_Has_rng<G>) {
         return {_St_rng_vvf_opt::_Non_member,
                 noexcept(_Fake_copy_init(vertexlist(declval<G>(),                 //
                                                     declval<vertex_range_t<G>>(), //
-                                                    std::declval<_value_fnc>())))};
+                                                    declval<VVF>())))};
       } else {
         return {_St_rng_vvf_opt::_None};
       }
@@ -328,7 +320,7 @@ namespace _Vertexlist {
      * 
      * Complexity: O(1)
      * 
-     * Default implementation: returns vertexlist_view<G>(vertices(std::forward<G>(g)))
+     * Default implementation: returns vertexlist_view<G>(vertices(forward<G>(g)))
      * 
      * @tparam G The graph type.
      * @param g A graph instance.
@@ -337,9 +329,9 @@ namespace _Vertexlist {
     template <class G>
     [[nodiscard]] constexpr auto operator()(G&& g) const noexcept(_Choice_all<G>._No_throw) {
       if constexpr (_Choice_all<G>()._Strategy == _St_all_opt::_Non_member) {
-        return vertexlist(std::forward<G>(g));
+        return vertexlist(forward<G>(g));
       } else {
-        return vertexlist_view<G>(vertices(std::forward<G>(g)));
+        return vertexlist_view<G>(vertices(forward<G>(g)));
       }
     }
 
@@ -348,7 +340,7 @@ namespace _Vertexlist {
      * 
      * Complexity: O(1)
      * 
-     * Default implementation: returns vertexlist_view<G>(vertices(std::forward<G>(g),value_fn))
+     * Default implementation: returns vertexlist_view<G>(vertices(forward<G>(g),value_fn))
      * 
      * @tparam G The graph type.
      * @param g A graph instance.
@@ -357,11 +349,11 @@ namespace _Vertexlist {
     */
     template <class G, class VVF>
     requires invocable<VVF, vertex_reference_t<G>>
-    [[nodiscard]] constexpr auto operator()(G&& g, VVF&& value_fn) const noexcept(_Choice_all_vvf<G>._No_throw) {
-      if constexpr (_Choice_all_vvf<G>()._Strategy == _St_all_opt::_Non_member) {
-        return vertexlist(std::forward<G>(g), value_fn);
+    [[nodiscard]] constexpr auto operator()(G&& g, VVF&& value_fn) const noexcept(_Choice_all_vvf<G, VVF>._No_throw) {
+      if constexpr (_Choice_all_vvf<G, VVF>()._Strategy == _St_all_opt::_Non_member) {
+        return vertexlist(forward<G>(g), value_fn);
       } else {
-        return vertexlist_view<G>(vertices(std::forward<G>(g), value_fn));
+        return vertexlist_view<G>(vertices(forward<G>(g), value_fn));
       }
     }
 
@@ -383,7 +375,7 @@ namespace _Vertexlist {
     [[nodiscard]] constexpr auto operator()(G&& g, vertex_iterator_t<G>& first, vertex_iterator_t<G>& last) const
           noexcept(_Choice_iter_rng<G&>._No_throw) {
       if constexpr (_Choice_iter_rng<G> == _St_iter_rng_opt::_Non_member) {
-        return vertexlist(std::forward(g), first, last);
+        return vertexlist(forward(g), first, last);
       } else {
         using iterator_type = vertexlist_iterator<G>;
         return vertexlist_view<G>(iterator_type(first, static_cast<vertex_id_t<G>>(first - begin(vertices(g)))), last);
@@ -407,9 +399,9 @@ namespace _Vertexlist {
     requires ranges::random_access_range<vertex_range_t<G>> && invocable<VVF, vertex_reference_t<G>>
     [[nodiscard]] constexpr auto
     operator()(G&& g, vertex_iterator_t<G>& first, vertex_iterator_t<G>& last, VVF&& value_fn) const
-          noexcept(_Choice_iter_rng<G&>._No_throw) {
-      if constexpr (_Choice_iter_rng_vvf<G> == _St_iter_rng_vvf_opt::_Non_member) {
-        return vertexlist(std::forward(g), first, last, value_fn);
+          noexcept(_Choice_iter_rng<G, VVF>._No_throw) {
+      if constexpr (_Choice_iter_rng_vvf<G, VVF> == _St_iter_rng_vvf_opt::_Non_member) {
+        return vertexlist(forward(g), first, last, value_fn);
       } else {
         using iterator_type = vertexlist_iterator<G, VVF>;
         return vertexlist_view<G>(iterator_type(first, static_cast<vertex_id_t<G>>(first - begin(vertices(g)))), last,
@@ -433,7 +425,7 @@ namespace _Vertexlist {
     requires ranges::random_access_range<vertex_range_t<G>>
     [[nodiscard]] constexpr auto operator()(G&& g, vertex_range_t<G>& rng) const noexcept(_Choice_rng<G&>._No_throw) {
       if constexpr (_Choice_rng<G> == _St_rng_opt::_Non_member) {
-        return vertexlist(std::forward(g), rng);
+        return vertexlist(forward(g), rng);
       } else {
         using iterator_type = vertexlist_iterator<G>;
         return vertexlist_view<G>(
@@ -459,9 +451,9 @@ namespace _Vertexlist {
     template <class G, class VVF>
     requires ranges::random_access_range<vertex_range_t<G>> && invocable<VVF, vertex_reference_t<G>>
     [[nodiscard]] constexpr auto operator()(G&& g, vertex_range_t<G>& rng, VVF&& value_fn) const
-          noexcept(_Choice_rng<G&>._No_throw) {
-      if constexpr (_Choice_rng_vvf<G> == _St_rng_vvf_opt::_Non_member) {
-        return vertexlist(std::forward(g), rng, value_fn);
+          noexcept(_Choice_rng<G, VVF>._No_throw) {
+      if constexpr (_Choice_rng_vvf<G, VVF> == _St_rng_vvf_opt::_Non_member) {
+        return vertexlist(forward(g), rng, value_fn);
       } else {
         using iterator_type = vertexlist_iterator<G, VVF>;
         return vertexlist_view<G>(
